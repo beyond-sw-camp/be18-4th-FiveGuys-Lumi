@@ -23,8 +23,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
+            ~/Backend/.gradle/caches
+            ~/Backend/.gradle/wrapper
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
@@ -36,23 +36,23 @@ jobs:
         run: |
           ./gradlew clean build -x test
 
-      - name: Docker Build and Push
-        run: |
-          # 1. Docker Hub 로그인 (비밀번호를 stdin으로 전달하여 보안 유지)
-          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login --username ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+#       - name: Docker Build and Push
+#         run: |
+#           # 1. Docker Hub 로그인 (비밀번호를 stdin으로 전달하여 보안 유지)
+#           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login --username ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
 
-          # 2. 도커 이미지 빌드
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DEV_DOCKERHUB_REPOSITORY }} .
+#           # 2. 도커 이미지 빌드
+#           docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DEV_DOCKERHUB_REPOSITORY }} .
 
-          # 3. 도커 이미지 푸시
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DEV_DOCKERHUB_REPOSITORY }}
+#           # 3. 도커 이미지 푸시
+#           docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DEV_DOCKERHUB_REPOSITORY }}
 
-      # GitHub의 아티팩트 저장소로 업로드
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: docker-compose-artifact
-          path: docker-compose.yaml
+#       # GitHub의 아티팩트 저장소로 업로드
+#       - name: Upload Artifact
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: docker-compose-artifact
+#           path: docker-compose.yaml
 
 #  deploy:
 #    if: github.event_name == 'push' || github.event_name == 'pull_request'
