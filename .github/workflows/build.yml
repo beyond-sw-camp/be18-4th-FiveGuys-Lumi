@@ -10,6 +10,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        working-directory: ./  # 리포 루트에서 실행되도록 고정
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
@@ -21,9 +25,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Grant execute permission for gradlew
-        working-directory: .
-        run: chmod +x gradlew
+        run: chmod +x ./gradlew
 
       - name: Build with Gradle
-        working-directory: .
         run: ./gradlew clean build --no-daemon
