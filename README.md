@@ -6,9 +6,9 @@
 
 <table>
   <tr align="center">
-    <td>김대의</td>
-    <td>윤동기</td>
-    <td>조용주</td>
+    <td></td>
+    <td></td>
+    <td></td>
   </tr>
   <tr align="center">
     <td><a target="_blank" href="https://github.com/kimeodml"><img src="https://avatars.githubusercontent.com/u/88065770?v=4" width="100px"><br>@kimeodml</a></td>
