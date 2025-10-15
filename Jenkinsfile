@@ -1,10 +1,10 @@
 pipeline {
-    agent any
+    agent { label 'master' }
     stages {
         stage('Test') {
             steps {
-                echo "1️⃣ 진짜 실행 시작"
-                sh 'pwd && ls -al'
+                echo "🧩 Workspace check"
+                sh 'pwd && whoami && ls -al /var/jenkins_home/workspace'
             }
         }
     }
