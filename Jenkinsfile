@@ -45,10 +45,10 @@ pipeline {
 
     post {
         success {
-            echo "🎉 Backend deployed successfully!"
+            echo " Backend deployed successfully!"
         }
         failure {
-            echo "💥 Build or Deploy failed!"
+            echo " Build or Deploy failed!"
         }
     }
 }
