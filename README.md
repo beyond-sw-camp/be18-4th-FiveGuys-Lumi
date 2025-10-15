@@ -2,7 +2,7 @@
 
 # Lumi
 
-# 1. 팀원 소개 랄랄랄랄랄랄랄랄
+# 1. 팀원 소개 랄랄
 
 <table>
   <tr align="center">
