@@ -38,7 +38,7 @@ out/
 
 application.yml
 
-.env
+src/main/resources/.env
 
 .DS_Store
 

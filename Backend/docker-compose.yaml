@@ -11,36 +11,43 @@ services:
       dockerfile: Dockerfile
     image: ${DOCKERHUB_USERNAME}/${DOCKERHUB_REPOSITORY}
     container_name: lumi
-    restart: always
+    restart: unless-stopped
     ports:
       - "8080:8080"
     environment:
       SPRING_PROFILES_ACTIVE: dev
       JWT_SECRET: ${JWT_SECRET}
-      TZ:  Asia/Seoul
+      TZ: Asia/Seoul
     volumes:
       - ${DEV_UPLOAD_DIR}:/spring-boot/uploads
+      - ./logs:/spring-boot/logs
     depends_on:
-      - mariadb
-      - redis
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     networks:
       - backend
 
   mariadb:
     image: mariadb:11.8.2
     container_name: mariadb
-    restart: always
-    volumes:
-      - db_data:/var/lib/mysql
+    restart: unless-stopped
     environment:
       MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
       MARIADB_DATABASE: ${MARIADB_DATABASE}
       MARIADB_USER: ${MARIADB_USER}
       MARIADB_PASSWORD: ${MARIADB_PASSWORD}
       TZ: Asia/Seoul
+    volumes:
+      - db_data:/var/lib/mysql
     healthcheck:
-      test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
-      start_period: 10s
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -50,7 +57,7 @@ services:
   redis:
     image: redis:8.2.1
     container_name: redis
-    restart: always
+    restart: unless-stopped
     volumes:
       - ./redis/data:/data
     healthcheck:

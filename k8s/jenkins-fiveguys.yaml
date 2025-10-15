@@ -1,0 +1,73 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jenkins-pvc
+  namespace: jenkins-fiveguys
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jenkins
+  namespace: jenkins-fiveguys
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jenkins
+  template:
+    metadata:
+      labels:
+        app: jenkins
+    spec:
+      serviceAccountName: default
+      containers:
+        - name: jenkins
+          image: jenkins/jenkins:lts-jdk21
+          ports:
+            - containerPort: 8080
+            - containerPort: 50000
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1Gi"
+              cpu: "1"
+          env:
+            - name: JAVA_OPTS
+              value: "-Djenkins.install.runSetupWizard=false"
+            - name: TZ
+              value: "Asia/Seoul"
+          volumeMounts:
+            - name: jenkins-home
+              mountPath: /var/jenkins_home
+      volumes:
+        - name: jenkins-home
+          persistentVolumeClaim:
+            claimName: jenkins-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jenkins
+  namespace: jenkins-fiveguys
+spec:
+  type: NodePort
+  ports:
+    - name: web
+      port: 8080
+      targetPort: 8080
+      nodePort: 30090
+    - name: agent
+      port: 50000
+      targetPort: 50000
+  selector:
+    app: jenkins

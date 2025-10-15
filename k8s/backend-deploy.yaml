@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  labels:
+    app: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: amicitia/lumi:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: dev
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:mariadb://mariadb:3306/2nd_project
+            - name: SPRING_DATASOURCE_USERNAME
+              value: beyond
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: beyond
+            - name: SPRING_DATA_REDIS_HOST
+              value: redis
+            - name: SPRING_DATA_REDIS_PORT
+              value: "6379"
+            - name: JWT_SECRET
+              value: fowijpf2oi3j23wieofjwoeiekwfjowjfoiejfowjfiwjfj==
+            - name: TZ
+              value: Asia/Seoul
+          volumeMounts:
+            - name: uploads
+              mountPath: /spring-boot/uploads
+            - name: logs
+              mountPath: /spring-boot/logs
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 20
+      volumes:
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: backend-uploads-pvc
+        - name: logs
+          emptyDir: {}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: backend-uploads-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+spec:
+  selector:
+    app: backend
+  ports:
+    - port: 8080
+      targetPort: 8080
+  type: ClusterIP

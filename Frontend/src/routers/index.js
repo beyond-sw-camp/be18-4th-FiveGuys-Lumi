@@ -5,93 +5,87 @@
  * Automatic routes for `./src/pages/*.vue`
  */
 
-// Composables
-
 import { createRouter, createWebHistory } from 'vue-router';
-
 import { getChannel } from '@/apis/channel';
-import Login from '@/pages/auth/';
+import Login from '@/pages/auth/Index.vue';
 import { useAuthStore } from '@/stores/authStore';
 
 const routes = [
   { path: '/', redirect: '/channels' },
   { path: '/login', component: Login, meta: { layout: 'blank' } },
-  { path: '/channels', component: () => import('@/pages/channel'), meta: { layout: 'root' } },
-  { path: '/calendar', component: () => import('@/pages/calendar'), meta: { layout: 'root' } },
-  { path: '/chats', component: () => import('@/pages/chat'), meta: { layout: 'root' } },
-  { path: '/profile', component: () => import('@/pages/setting'), meta: { layout: 'root' } },
+  { path: '/channels', component: () => import('@/pages/channel/Index.vue'), meta: { layout: 'root' } },
+  { path: '/calendar', component: () => import('@/pages/calendar/Index.vue'), meta: { layout: 'root' } },
+  { path: '/chats', component: () => import('@/pages/chat/Index.vue'), meta: { layout: 'root' } },
+  { path: '/profile', component: () => import('@/pages/setting/Index.vue'), meta: { layout: 'root' } },
+
   {
     path: '/channels/:channelId/classes',
-    component: () => import('@/pages/class'),
+    component: () => import('@/pages/class/Index.vue'),
     meta: { layout: 'root', subLayout: 'sublayout' },
   },
-
   {
     path: '/channels/:channelId/assignments',
     component: () => import('@/pages/assignment/Index.vue'),
     meta: { layout: 'root', subLayout: 'sublayout' },
-  }, // 과제 리스트 조회
+  },
   {
     path: '/channels/:channelId/assignments/new',
     component: () => import('@/pages/assignment/AssignmentCreate.vue'),
     meta: { layout: 'root', subLayout: 'sublayout' },
-  }, // 등록
+  },
   {
     path: '/channels/:channelId/assignments/:assignmentId/edit',
     component: () => import('@/pages/assignment/AssignmentUpdate.vue'),
     meta: { layout: 'root', subLayout: 'sublayout' },
-  }, // 수정
+  },
   {
     path: '/channels/:channelId/assignments/:assignmentId',
     component: () => import('@/pages/assignment/AssignmentDetail.vue'),
     meta: { layout: 'root', subLayout: 'sublayout' },
-  }, // 과제 단일 조회
+  },
   {
     path: '/channels/:channelId/assignments/:assignmentId/submissions/:submissionId',
     component: () => import('@/pages/submission/Index.vue'),
     meta: { layout: 'root', subLayout: 'sublayout' },
-  }, // 제출 단일 조회
+  },
   {
     path: '/channels/:channelId/assignments/:assignmentId/submissions/new',
     component: () => import('@/pages/submission/SubmissionCreate.vue'),
     meta: { layout: 'root', subLayout: 'sublayout' },
-  }, // 제출 등록
+  },
   {
     path: '/channels/:channelId/assignments/:assignmentId/submissions/:submissionId/edit',
     component: () => import('@/pages/submission/SubmissionUpdate.vue'),
     meta: { layout: 'root', subLayout: 'sublayout' },
-  }, // 수정(학생)
-
-  // { path: '/channels/:channelId/assignments/:assignmentId/submissions/new', component: Submission,  meta: { layout: 'root', subLayout: 'sublayout' }, }, 제출(학생)
-
+  },
   {
     path: '/channels/:channelId/materials',
     component: () => import('@/pages/material/Index.vue'),
     meta: { layout: 'root', subLayout: 'sublayout' },
-  }, // 자료 리스트 조회
+  },
   {
     path: '/channels/:channelId/materials/new',
     component: () => import('@/pages/material/MaterialCreate.vue'),
     meta: { layout: 'root', subLayout: 'sublayout' },
-  }, // 자료 등록
+  },
   {
     path: '/channels/:channelId/materials/:materialId/edit',
     component: () => import('@/pages/material/MaterialUpdate.vue'),
     meta: { layout: 'root', subLayout: 'sublayout' },
-  }, // 자료 수정
+  },
   {
     path: '/channels/:channelId/materials/:materialId',
     component: () => import('@/pages/material/MaterialDetail.vue'),
     meta: { layout: 'root', subLayout: 'sublayout' },
-  }, // 단일 조회
+  },
   {
     path: '/channels/:channelId/scores',
-    component: () => import('@/pages/score'),
+    component: () => import('@/pages/score/Index.vue'),
     meta: { layout: 'root', subLayout: 'sublayout' },
   },
   {
     path: '/channels/:channelId/participants',
-    component: () => import('@/pages/participant'),
+    component: () => import('@/pages/participant/Index.vue'),
     meta: { layout: 'root', subLayout: 'sublayout' },
   },
 ];
@@ -101,7 +95,6 @@ const router = createRouter({
   routes,
 });
 
-// Workaround for https://github.com/vitejs/vite/issues/11804
 router.onError((err, to) => {
   if (err?.message?.includes?.('Failed to fetch dynamically imported module')) {
     if (localStorage.getItem('vuetify:dynamic-reload')) {

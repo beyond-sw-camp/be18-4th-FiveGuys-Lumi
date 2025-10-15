@@ -1,12 +1,14 @@
-FROM eclipse-temurin:21-jre-alpine
+# 1. JDK 이미지 선택 (21 버전)
+FROM openjdk:21-jdk
 
-WORKDIR /spring-boot
+# 2. 작업 디렉토리 설정
+WORKDIR /app
 
-# JAR 파일을 복사할 경로를 설정
-ARG JAR_FILE=build/libs/*SNAPSHOT.jar
+# 3. JAR 파일 복사 (Gradle 빌드 산출물)
+COPY build/libs/*.jar app.jar
 
-# 위에서 설정한 JAR 파일을 컨테이너의 app.jar로 복사
-COPY ${JAR_FILE} app.jar
+# 4. 외부 접근 포트 열기
+EXPOSE 8080
 
-# 컨테이너가 실행될 때 동작하는 명령어 정의
-ENTRYPOINT ["java", "-Dspring.profiles.active=${USE_PROFILE}", "-Duser.timezone=Asia/Seoul", "-jar", "/spring-boot/app.jar"]
+# 5. 실행 명령
+ENTRYPOINT ["java", "-jar", "app.jar"]
