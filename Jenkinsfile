@@ -31,19 +31,25 @@ spec:
 
     environment {
         DOCKER_CREDENTIALS_ID = 'dockerhub-cred'
-        DOCKER_IMAGE_NAME = 'amicitia/lumi'
+        BACKEND_IMAGE_NAME = 'amicitia/lumi'
+        FRONTEND_IMAGE_NAME = 'amicitia/lumi-frontend'
     }
 
     stages {
+
         stage('Gradle Build') {
             steps {
                 container('gradle') {
-                    sh 'cd Backend && chmod +x gradlew && ./gradlew clean build -x test'
+                    sh '''
+                        cd Backend
+                        chmod +x gradlew
+                        ./gradlew clean build -x test
+                    '''
                 }
             }
         }
 
-        stage('Docker Build & Push') {
+        stage('Backend Docker Build & Push') {
             steps {
                 container('docker') {
                     script {
@@ -52,9 +58,31 @@ spec:
                             usernameVariable: 'DOCKER_USERNAME',
                             passwordVariable: 'DOCKER_PASSWORD'
                         )]) {
-                            sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
-                            sh 'docker build -t $DOCKER_IMAGE_NAME:$BUILD_NUMBER -f Backend/Dockerfile ./Backend'
-                            sh 'docker push $DOCKER_IMAGE_NAME:$BUILD_NUMBER'
+                            sh '''
+                                echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+                                docker build -t $BACKEND_IMAGE_NAME:$BUILD_NUMBER -f Backend/Dockerfile ./Backend
+                                docker push $BACKEND_IMAGE_NAME:$BUILD_NUMBER
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Frontend Docker Build & Push') {
+            steps {
+                container('docker') {
+                    script {
+                        withCredentials([usernamePassword(
+                            credentialsId: DOCKER_CREDENTIALS_ID,
+                            usernameVariable: 'DOCKER_USERNAME',
+                            passwordVariable: 'DOCKER_PASSWORD'
+                        )]) {
+                            sh '''
+                                echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+                                docker build -t $FRONTEND_IMAGE_NAME:$BUILD_NUMBER -f Frontend/Dockerfile ./Frontend
+                                docker push $FRONTEND_IMAGE_NAME:$BUILD_NUMBER
+                            '''
                         }
                     }
                 }
