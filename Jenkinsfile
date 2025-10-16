@@ -10,34 +10,32 @@ spec:
   containers:
   - name: gradle
     image: gradle:8.10.2-jdk21-alpine
-    command:
-    - cat
+    command: ["cat"]
     tty: true
   - name: docker
     image: docker:28.5.1-cli-alpine3.22
-    command:
-    - cat
+    command: ["cat"]
     tty: true
     volumeMounts:
-    - name: docker-sock
-      mountPath: /var/run/docker.sock
+      - name: docker-sock
+        mountPath: /var/run/docker.sock
   volumes:
-  - name: docker-sock
-    hostPath:
-      path: /var/run/docker.sock
+    - name: docker-sock
+      hostPath:
+        path: /var/run/docker.sock
 '''
         }
     }
 
     environment {
         DOCKER_CREDENTIALS_ID = 'dockerhub-cred'
+        DISCORD_WEBHOOK_CREDENTIALS_ID = 'discord-webhook-lumi'
 
         BACKEND_IMAGE_NAME = 'amicitia/lumi-backend'
         FRONTEND_IMAGE_NAME = 'amicitia/lumi-frontend'
     }
 
     stages {
-
         stage('Gradle Build') {
             steps {
                 container('gradle') {
@@ -87,6 +85,24 @@ spec:
                         }
                     }
                 }
+            }
+        }
+    }
+
+    post {
+        always {
+            withCredentials([string(
+                credentialsId: DISCORD_WEBHOOK_CREDENTIALS_ID,
+                variable: 'DISCORD_WEBHOOK_URL'
+            )]) {
+                discordSend description: """
+                📦 *${env.JOB_NAME}:${currentBuild.displayName}*
+                ▶️ 결과 : ${currentBuild.result}
+                🕒 실행 시간 : ${(currentBuild.duration / 1000).intValue()}초
+                """,
+                result: currentBuild.currentResult,
+                title: "Jenkins CI 알림",
+                webhookURL: "${DISCORD_WEBHOOK_URL}"
             }
         }
     }
