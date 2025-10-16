@@ -2,7 +2,6 @@ pipeline {
     agent {
         kubernetes {
             yaml '''
-
 apiVersion: v1
 kind: Pod
 metadata:
@@ -54,7 +53,7 @@ spec:
                             passwordVariable: 'DOCKER_PASSWORD'
                         )]) {
                             sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
-                            sh 'docker build -t $DOCKER_IMAGE_NAME:$BUILD_NUMBER .'
+                            sh 'docker build -t $DOCKER_IMAGE_NAME:$BUILD_NUMBER -f Backend/Dockerfile ./Backend'
                             sh 'docker push $DOCKER_IMAGE_NAME:$BUILD_NUMBER'
                         }
                     }
