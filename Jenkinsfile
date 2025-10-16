@@ -31,7 +31,8 @@ spec:
 
     environment {
         DOCKER_CREDENTIALS_ID = 'dockerhub-cred'
-        BACKEND_IMAGE_NAME = 'amicitia/lumi'
+
+        BACKEND_IMAGE_NAME = 'amicitia/lumi-backend'
         FRONTEND_IMAGE_NAME = 'amicitia/lumi-frontend'
     }
 
