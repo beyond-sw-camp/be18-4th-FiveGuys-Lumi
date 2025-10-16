@@ -38,8 +38,7 @@ spec:
         stage('Gradle Build') {
             steps {
                 container('gradle') {
-                    sh 'gradle -v'
-                    sh './gradlew clean build -x test'
+                    sh 'cd Backend && chmod +x gradlew && ./gradlew clean build -x test'
                 }
             }
         }
