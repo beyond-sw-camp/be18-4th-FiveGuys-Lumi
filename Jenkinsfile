@@ -14,7 +14,7 @@ spec:
     - cat
     tty: true
   - name: docker
-    image: docker:28.0.0-cli-alpine3.20
+    image: docker:28.5.1-cli-alpine3.22
     command:
     - cat
     tty: true
