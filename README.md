@@ -3,7 +3,7 @@
 # Lumi
 
 # 1. 팀원 소개
-* 젠킨스 테스트!!
+* 젠킨스 테스트!!!
 
 <table>
   <tr align="center">
