@@ -1,10 +1,10 @@
 pipeline {
-    agent { label 'master' }
+    agent any
+
     stages {
-        stage('Test') {
+        stage('Hello') {
             steps {
-                echo "🧩 Workspace check"
-                sh 'pwd && whoami && ls -al /var/jenkins_home/workspace'
+                echo 'Hello World'
             }
         }
     }
