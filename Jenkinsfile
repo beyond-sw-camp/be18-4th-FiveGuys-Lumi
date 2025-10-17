@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'ci-agent' }  // ✅ 쿠버네티스 클라우드의 Pod Template 호출
+    agent { label 'ci-agent' }
 
     environment {
         DOCKER_CREDENTIALS_ID = 'dockerhub-cred'
@@ -10,7 +10,29 @@ pipeline {
     }
 
     stages {
+        stage('Detect Changes') {
+            steps {
+                script {
+                    // 최근 커밋 비교로 변경된 파일 목록을 가져옴
+                    def changedFiles = sh(
+                        script: 'git diff --name-only HEAD~1',
+                        returnStdout: true
+                    ).trim().split("\n")
+
+                    echo "📂 변경된 파일 목록:\n${changedFiles.join('\n')}"
+
+                    // 변경된 경로를 기준으로 빌드할 대상 결정
+                    env.SHOULD_BUILD_BACKEND = changedFiles.any { it.startsWith("Backend/") } ? "true" : "false"
+                    env.SHOULD_BUILD_FRONTEND = changedFiles.any { it.startsWith("Frontend/") } ? "true" : "false"
+
+                    echo "💡 SHOULD_BUILD_BACKEND: ${env.SHOULD_BUILD_BACKEND}"
+                    echo "💡 SHOULD_BUILD_FRONTEND: ${env.SHOULD_BUILD_FRONTEND}"
+                }
+            }
+        }
+
         stage('Gradle Build') {
+            when { expression { env.SHOULD_BUILD_BACKEND == "true" } }
             steps {
                 container('gradle') {
                     sh '''
@@ -22,19 +44,32 @@ pipeline {
             }
         }
 
+        stage('Docker Login') {
+            steps {
+                container('docker') {
+                    withCredentials([usernamePassword(
+                        credentialsId: DOCKER_CREDENTIALS_ID,
+                        usernameVariable: 'DOCKER_USERNAME',
+                        passwordVariable: 'DOCKER_PASSWORD'
+                    )]) {
+                        sh '''
+                            echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+                        '''
+                    }
+                }
+            }
+        }
+
         stage('Backend Docker Build & Push') {
+            when { expression { env.SHOULD_BUILD_BACKEND == "true" } }
             steps {
                 container('docker') {
                     script {
-                        withCredentials([usernamePassword(
-                            credentialsId: DOCKER_CREDENTIALS_ID,
-                            usernameVariable: 'DOCKER_USERNAME',
-                            passwordVariable: 'DOCKER_PASSWORD'
-                        )]) {
+                        def version = "${env.BUILD_NUMBER}"
+                        withEnv(["IMAGE_VERSION=${version}"]) {
                             sh '''
-                                echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-                                docker build -t $BACKEND_IMAGE_NAME:$BUILD_NUMBER -f Backend/Dockerfile ./Backend
-                                docker push $BACKEND_IMAGE_NAME:$BUILD_NUMBER
+                                docker build -t $BACKEND_IMAGE_NAME:$IMAGE_VERSION -f Backend/Dockerfile ./Backend
+                                docker push $BACKEND_IMAGE_NAME:$IMAGE_VERSION
                             '''
                         }
                     }
@@ -43,21 +78,35 @@ pipeline {
         }
 
         stage('Frontend Docker Build & Push') {
+            when { expression { env.SHOULD_BUILD_FRONTEND == "true" } }
             steps {
                 container('docker') {
                     script {
-                        withCredentials([usernamePassword(
-                            credentialsId: DOCKER_CREDENTIALS_ID,
-                            usernameVariable: 'DOCKER_USERNAME',
-                            passwordVariable: 'DOCKER_PASSWORD'
-                        )]) {
+                        def version = "${env.BUILD_NUMBER}"
+                        withEnv(["IMAGE_VERSION=${version}"]) {
                             sh '''
-                                echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-                                docker build -t $FRONTEND_IMAGE_NAME:$BUILD_NUMBER -f Frontend/Dockerfile ./Frontend
-                                docker push $FRONTEND_IMAGE_NAME:$BUILD_NUMBER
+                                docker build -t $FRONTEND_IMAGE_NAME:$IMAGE_VERSION -f Frontend/Dockerfile ./Frontend
+                                docker push $FRONTEND_IMAGE_NAME:$IMAGE_VERSION
                             '''
                         }
                     }
+                }
+            }
+        }
+
+        stage('Trigger k8s-manifests (ArgoCD 연동)') {
+            steps {
+                script {
+                    def version = "${env.BUILD_NUMBER}"
+                    echo "🚀 Triggering CD pipeline with version ${version}"
+
+                    build job: 'lumi-manifests',
+                        parameters: [
+                            string(name: 'DOCKER_IMAGE_VERSION', value: "${version}"),
+                            string(name: 'DID_BUILD_APP', value: "${env.SHOULD_BUILD_FRONTEND}"),
+                            string(name: 'DID_BUILD_API', value: "${env.SHOULD_BUILD_BACKEND}")
+                        ],
+                        wait: true
                 }
             }
         }
@@ -69,14 +118,17 @@ pipeline {
                 credentialsId: DISCORD_WEBHOOK_CREDENTIALS_ID,
                 variable: 'DISCORD_WEBHOOK_URL'
             )]) {
-                discordSend description: """
-                📦 *${env.JOB_NAME}:${currentBuild.displayName}*
-                ▶️ 결과 : ${currentBuild.result}
-                🕒 실행 시간 : ${(currentBuild.duration / 1000).intValue()}초
-                """,
-                result: currentBuild.currentResult,
-                title: "Jenkins CI 알림",
-                webhookURL: "${DISCORD_WEBHOOK_URL}"
+                script {
+                    def emoji = currentBuild.result == 'SUCCESS' ? '✅' : '❌'
+                    discordSend description: """
+                    ${emoji} *${env.JOB_NAME}:${currentBuild.displayName}*
+                    ▶️ 결과 : ${currentBuild.result}
+                    🕒 실행 시간 : ${(currentBuild.duration / 1000).intValue()}초
+                    """,
+                    result: currentBuild.currentResult,
+                    title: "Lumi CI 파이프라인 알림",
+                    webhookURL: "${DISCORD_WEBHOOK_URL}"
+                }
             }
         }
     }
