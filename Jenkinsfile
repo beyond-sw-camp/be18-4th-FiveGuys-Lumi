@@ -1,5 +1,5 @@
 pipeline {
-    agent none  // 각 stage별 agent 사용
+    agent { label 'ci-agent' }  // ✅ 쿠버네티스 클라우드의 Pod Template 호출
 
     environment {
         DOCKER_CREDENTIALS_ID = 'dockerhub-cred'
@@ -10,9 +10,7 @@ pipeline {
     }
 
     stages {
-
         stage('Gradle Build') {
-            agent { label 'ci-agent' }
             steps {
                 container('gradle') {
                     sh '''
@@ -24,46 +22,40 @@ pipeline {
             }
         }
 
-        stage('Docker Build & Push (Parallel)') {
-            parallel {
-                stage('Backend Build & Push') {
-                    agent { label 'ci-agent' }
-                    steps {
-                        container('docker') {
-                            script {
-                                withCredentials([usernamePassword(
-                                    credentialsId: DOCKER_CREDENTIALS_ID,
-                                    usernameVariable: 'DOCKER_USERNAME',
-                                    passwordVariable: 'DOCKER_PASSWORD'
-                                )]) {
-                                    sh '''
-                                        echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-                                        docker build -t $BACKEND_IMAGE_NAME:$BUILD_NUMBER -f Backend/Dockerfile ./Backend
-                                        docker push $BACKEND_IMAGE_NAME:$BUILD_NUMBER
-                                    '''
-                                }
-                            }
+        stage('Backend Docker Build & Push') {
+            steps {
+                container('docker') {
+                    script {
+                        withCredentials([usernamePassword(
+                            credentialsId: DOCKER_CREDENTIALS_ID,
+                            usernameVariable: 'DOCKER_USERNAME',
+                            passwordVariable: 'DOCKER_PASSWORD'
+                        )]) {
+                            sh '''
+                                echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+                                docker build -t $BACKEND_IMAGE_NAME:$BUILD_NUMBER -f Backend/Dockerfile ./Backend
+                                docker push $BACKEND_IMAGE_NAME:$BUILD_NUMBER
+                            '''
                         }
                     }
                 }
+            }
+        }
 
-                stage('Frontend Build & Push') {
-                    agent { label 'ci-agent' }
-                    steps {
-                        container('docker') {
-                            script {
-                                withCredentials([usernamePassword(
-                                    credentialsId: DOCKER_CREDENTIALS_ID,
-                                    usernameVariable: 'DOCKER_USERNAME',
-                                    passwordVariable: 'DOCKER_PASSWORD'
-                                )]) {
-                                    sh '''
-                                        echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-                                        docker build -t $FRONTEND_IMAGE_NAME:$BUILD_NUMBER -f Frontend/Dockerfile ./Frontend
-                                        docker push $FRONTEND_IMAGE_NAME:$BUILD_NUMBER
-                                    '''
-                                }
-                            }
+        stage('Frontend Docker Build & Push') {
+            steps {
+                container('docker') {
+                    script {
+                        withCredentials([usernamePassword(
+                            credentialsId: DOCKER_CREDENTIALS_ID,
+                            usernameVariable: 'DOCKER_USERNAME',
+                            passwordVariable: 'DOCKER_PASSWORD'
+                        )]) {
+                            sh '''
+                                echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+                                docker build -t $FRONTEND_IMAGE_NAME:$BUILD_NUMBER -f Frontend/Dockerfile ./Frontend
+                                docker push $FRONTEND_IMAGE_NAME:$BUILD_NUMBER
+                            '''
                         }
                     }
                 }
@@ -73,15 +65,14 @@ pipeline {
 
     post {
         always {
-            agent { label 'ci-agent' }
             withCredentials([string(
                 credentialsId: DISCORD_WEBHOOK_CREDENTIALS_ID,
                 variable: 'DISCORD_WEBHOOK_URL'
             )]) {
                 discordSend description: """
-                *${env.JOB_NAME}:${currentBuild.displayName}*
-                결과 : ${currentBuild.result}
-                실행 시간 : ${(currentBuild.duration / 1000).intValue()}초
+                📦 *${env.JOB_NAME}:${currentBuild.displayName}*
+                ▶️ 결과 : ${currentBuild.result}
+                🕒 실행 시간 : ${(currentBuild.duration / 1000).intValue()}초
                 """,
                 result: currentBuild.currentResult,
                 title: "Jenkins CI 알림",
