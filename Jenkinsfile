@@ -8,6 +8,11 @@ metadata:
   name: lumi-ci
 spec:
   containers:
+  - name: gradle
+    image: gradle:8.10.2-jdk21-alpine
+    command:
+    - cat
+    tty: true
   - name: docker
     image: docker:28.5.1-cli-alpine3.22
     command:
@@ -39,7 +44,6 @@ spec:
             }
         }
 
-        // 🔧 여기 수정됨 — container('docker') 제거
         stage('Detect Changes') {
             steps {
                 script {
@@ -49,12 +53,8 @@ spec:
                     ).trim().split("\n")
 
                     echo "📂 변경된 파일 목록:\n${changedFiles.join('\n')}"
-
                     env.SHOULD_BUILD_BACKEND = changedFiles.any { it.startsWith("Backend/") } ? "true" : "false"
                     env.SHOULD_BUILD_FRONTEND = changedFiles.any { it.startsWith("Frontend/") } ? "true" : "false"
-
-                    echo "💡 SHOULD_BUILD_BACKEND: ${env.SHOULD_BUILD_BACKEND}"
-                    echo "💡 SHOULD_BUILD_FRONTEND: ${env.SHOULD_BUILD_FRONTEND}"
                 }
             }
         }
@@ -79,11 +79,16 @@ spec:
         stage('Backend Build & Push') {
             when { expression { env.SHOULD_BUILD_BACKEND == "true" } }
             steps {
-                container('docker') {
+                container('gradle') {
                     sh '''
                         cd Backend
                         chmod +x gradlew
                         ./gradlew clean build -x test
+                    '''
+                }
+                container('docker') {
+                    sh '''
+                        cd Backend
                         docker build -t $BACKEND_IMAGE_NAME:${BUILD_NUMBER} -f Dockerfile .
                         docker push $BACKEND_IMAGE_NAME:${BUILD_NUMBER}
                     '''
