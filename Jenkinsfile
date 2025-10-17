@@ -123,10 +123,10 @@ spec:
 
     post {
         success {
-            echo "✅ Manifests updated successfully"
+            echo " Manifests updated successfully"
         }
         failure {
-            echo "❌ Failed to update manifests"
+            echo " Failed to update manifests"
         }
     }
 }
