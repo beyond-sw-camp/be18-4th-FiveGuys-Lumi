@@ -1,5 +1,5 @@
 pipeline {
-    agent none
+    agent none  // 각 stage에서 개별 agent 사용
 
     environment {
         DOCKER_CREDENTIALS_ID = 'dockerhub-cred'
@@ -10,6 +10,7 @@ pipeline {
     }
 
     stages {
+
         stage('Gradle Build') {
             agent { label 'ci-agent' }
             steps {
@@ -25,7 +26,8 @@ pipeline {
 
         stage('Docker Build & Push (Parallel)') {
             parallel {
-                stage('Backend') {
+
+                stage('Backend Build & Push') {
                     agent { label 'ci-agent' }
                     steps {
                         container('docker') {
@@ -46,7 +48,7 @@ pipeline {
                     }
                 }
 
-                stage('Frontend') {
+                stage('Frontend Build & Push') {
                     agent { label 'ci-agent' }
                     steps {
                         container('docker') {
@@ -79,9 +81,9 @@ pipeline {
                     variable: 'DISCORD_WEBHOOK_URL'
                 )]) {
                     discordSend description: """
-                    📦 *${env.JOB_NAME}:${currentBuild.displayName}*
-                    ▶️ 결과 : ${currentBuild.result}
-                    🕒 실행 시간 : ${(currentBuild.duration / 1000).intValue()}초
+                    *${env.JOB_NAME}:${currentBuild.displayName}*
+                    결과 : ${currentBuild.result}
+                    실행 시간 : ${(currentBuild.duration / 1000).intValue()}초
                     """,
                     result: currentBuild.currentResult,
                     title: "Jenkins CI 알림",
