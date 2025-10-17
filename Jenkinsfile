@@ -1,72 +1,61 @@
 pipeline {
     agent {
         kubernetes {
-            inheritFrom ''
-            defaultContainer 'jnlp'
-            yaml """
+            yaml '''
 apiVersion: v1
 kind: Pod
+metadata:
+  name: lumi-ci
 spec:
   containers:
-  - name: gradle
-    image: gradle:8.10.2-jdk21-alpine
-    command: ['cat']
-    tty: true
   - name: docker
     image: docker:28.5.1-cli-alpine3.22
-    command: ['cat']
+    command:
+    - cat
     tty: true
     volumeMounts:
-    - name: docker-sock
+    - name: docker-socket
       mountPath: /var/run/docker.sock
   volumes:
-  - name: docker-sock
+  - name: docker-socket
     hostPath:
       path: /var/run/docker.sock
-"""
+'''
         }
     }
 
     environment {
-        DOCKER_CREDENTIALS_ID = 'dockerhub-cred'
-        DISCORD_WEBHOOK_CREDENTIALS_ID = 'discord-webhook-lumi'
         BACKEND_IMAGE_NAME = 'amicitia/lumi-backend'
         FRONTEND_IMAGE_NAME = 'amicitia/lumi-frontend'
+        DOCKER_CREDENTIALS_ID = 'dockerhub-cred'
+        DISCORD_WEBHOOK_CREDENTIALS_ID = 'discord-webhook-lumi'
     }
 
     stages {
+        stage('Checkout Source') {
+            steps {
+                checkout scm
+                sh 'ls -la && echo "✅ Git checkout complete"'
+            }
+        }
+
         stage('Detect Changes') {
             steps {
-                container('gradle') {
+                container('docker') {
                     script {
-                        // 최근 커밋 비교로 변경된 파일 목록 확인
                         def changedFiles = sh(
-                            script: 'git diff --name-only HEAD~1',
+                            script: 'git diff --name-only HEAD~1 || true',
                             returnStdout: true
                         ).trim().split("\n")
 
                         echo "📂 변경된 파일 목록:\n${changedFiles.join('\n')}"
 
-                        // 변경된 경로에 따라 빌드 대상 결정
                         env.SHOULD_BUILD_BACKEND = changedFiles.any { it.startsWith("Backend/") } ? "true" : "false"
                         env.SHOULD_BUILD_FRONTEND = changedFiles.any { it.startsWith("Frontend/") } ? "true" : "false"
 
                         echo "💡 SHOULD_BUILD_BACKEND: ${env.SHOULD_BUILD_BACKEND}"
                         echo "💡 SHOULD_BUILD_FRONTEND: ${env.SHOULD_BUILD_FRONTEND}"
                     }
-                }
-            }
-        }
-
-        stage('Gradle Build') {
-            when { expression { env.SHOULD_BUILD_BACKEND == "true" } }
-            steps {
-                container('gradle') {
-                    sh '''
-                        cd Backend
-                        chmod +x gradlew
-                        ./gradlew clean build -x test
-                    '''
                 }
             }
         }
@@ -80,6 +69,7 @@ spec:
                         passwordVariable: 'DOCKER_PASSWORD'
                     )]) {
                         sh '''
+                            docker logout || true
                             echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
                         '''
                     }
@@ -87,55 +77,42 @@ spec:
             }
         }
 
-        stage('Backend Docker Build & Push') {
+        stage('Backend Build & Push') {
             when { expression { env.SHOULD_BUILD_BACKEND == "true" } }
             steps {
                 container('docker') {
-                    script {
-                        def version = "${env.BUILD_NUMBER}"
-                        withEnv(["IMAGE_VERSION=${version}"]) {
-                            sh '''
-                                docker build -t $BACKEND_IMAGE_NAME:$IMAGE_VERSION -f Backend/Dockerfile ./Backend
-                                docker push $BACKEND_IMAGE_NAME:$IMAGE_VERSION
-                            '''
-                        }
-                    }
+                    sh '''
+                        cd Backend
+                        chmod +x gradlew
+                        ./gradlew clean build -x test
+                        docker build -t $BACKEND_IMAGE_NAME:${BUILD_NUMBER} -f Dockerfile .
+                        docker push $BACKEND_IMAGE_NAME:${BUILD_NUMBER}
+                    '''
                 }
             }
         }
 
-        stage('Frontend Docker Build & Push') {
+        stage('Frontend Build & Push') {
             when { expression { env.SHOULD_BUILD_FRONTEND == "true" } }
             steps {
                 container('docker') {
-                    script {
-                        def version = "${env.BUILD_NUMBER}"
-                        withEnv(["IMAGE_VERSION=${version}"]) {
-                            sh '''
-                                docker build -t $FRONTEND_IMAGE_NAME:$IMAGE_VERSION -f Frontend/Dockerfile ./Frontend
-                                docker push $FRONTEND_IMAGE_NAME:$IMAGE_VERSION
-                            '''
-                        }
-                    }
+                    sh '''
+                        cd Frontend
+                        docker build -t $FRONTEND_IMAGE_NAME:${BUILD_NUMBER} -f Dockerfile .
+                        docker push $FRONTEND_IMAGE_NAME:${BUILD_NUMBER}
+                    '''
                 }
             }
         }
 
-        stage('Trigger k8s-manifests (ArgoCD 연동)') {
+        stage('Trigger ArgoCD Sync') {
             steps {
                 script {
-                    def version = "${env.BUILD_NUMBER}"
-                    def buildApp = "${env.SHOULD_BUILD_FRONTEND}"
-                    def buildApi = "${env.SHOULD_BUILD_BACKEND}"
-
-                    echo "🚀 Triggering CD pipeline with version ${version}"
-                    echo "📦 DID_BUILD_APP=${buildApp}, DID_BUILD_API=${buildApi}"
-
                     build job: 'lumi-manifests',
                         parameters: [
-                            string(name: 'DOCKER_IMAGE_VERSION', value: version),
-                            string(name: 'DID_BUILD_APP', value: buildApp),
-                            string(name: 'DID_BUILD_API', value: buildApi)
+                            string(name: 'DOCKER_IMAGE_VERSION', value: "${BUILD_NUMBER}"),
+                            string(name: 'DID_BUILD_APP', value: "${env.SHOULD_BUILD_FRONTEND}"),
+                            string(name: 'DID_BUILD_API', value: "${env.SHOULD_BUILD_BACKEND}")
                         ],
                         wait: true
                 }
@@ -145,10 +122,7 @@ spec:
 
     post {
         always {
-            withCredentials([string(
-                credentialsId: DISCORD_WEBHOOK_CREDENTIALS_ID,
-                variable: 'DISCORD_WEBHOOK_URL'
-            )]) {
+            withCredentials([string(credentialsId: DISCORD_WEBHOOK_CREDENTIALS_ID, variable: 'DISCORD_WEBHOOK_URL')]) {
                 script {
                     def emoji = currentBuild.result == 'SUCCESS' ? '✅' : '❌'
                     discordSend description: """
@@ -157,7 +131,7 @@ spec:
                     🕒 실행 시간 : ${(currentBuild.duration / 1000).intValue()}초
                     """,
                     result: currentBuild.currentResult,
-                    title: "Lumi CI 파이프라인 알림",
+                    title: "Lumi CI Pipeline",
                     webhookURL: "${DISCORD_WEBHOOK_URL}"
                 }
             }
