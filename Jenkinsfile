@@ -1,139 +1,132 @@
 pipeline {
-    agent any
+    agent {
+        kubernetes {
+            label 'ci-agent'
+            defaultContainer 'jnlp'
+            yaml """
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: gradle
+    image: gradle:8.10.2-jdk21-alpine
+    command:
+    - cat
+    tty: true
+  - name: docker
+    image: docker:28.5.1-cli-alpine3.22
+    command:
+    - cat
+    tty: true
+    volumeMounts:
+    - name: docker-sock
+      mountPath: /var/run/docker.sock
+  - name: git
+    image: alpine/git:2.45.2
+    command:
+    - cat
+    tty: true
+  volumes:
+  - name: docker-sock
+    hostPath:
+      path: /var/run/docker.sock
+"""
+        }
+    }
+
+    parameters {
+        string(name: 'DOCKER_IMAGE_VERSION', defaultValue: '', description: 'Docker Image Version')
+        string(name: 'DID_BUILD_APP', defaultValue: '', description: 'Did Build Frontend')
+        string(name: 'DID_BUILD_API', defaultValue: '', description: 'Did Build Backend')
+    }
 
     environment {
-        DOCKER_CREDENTIALS_ID = 'dockerhub-cred'
-        DISCORD_WEBHOOK_CREDENTIALS_ID = 'discord-webhook-lumi'
-
-        BACKEND_IMAGE_NAME = 'amicitia/lumi-backend'
-        FRONTEND_IMAGE_NAME = 'amicitia/lumi-frontend'
+        GIT_CREDENTIALS_ID = 'github-deploy-key'
+        GIT_USER_NAME = 'JJJJungw'
+        GIT_USER_EMAIL = 'dyungwoo3600@gmail.com'
     }
 
     stages {
-        stage('Detect Changes') {
+        stage('Checkout main branch') {
             steps {
-                script {
-                    // 최근 커밋 비교로 변경된 파일 목록을 가져옴
-                    def changedFiles = sh(
-                        script: 'git diff --name-only HEAD~1',
-                        returnStdout: true
-                    ).trim().split("\n")
-
-                    echo "📂 변경된 파일 목록:\n${changedFiles.join('\n')}"
-
-                    // 변경된 경로를 기준으로 빌드할 대상 결정
-                    env.SHOULD_BUILD_BACKEND = changedFiles.any { it.startsWith("Backend/") } ? "true" : "false"
-                    env.SHOULD_BUILD_FRONTEND = changedFiles.any { it.startsWith("Frontend/") } ? "true" : "false"
-
-                    echo "💡 SHOULD_BUILD_BACKEND: ${env.SHOULD_BUILD_BACKEND}"
-                    echo "💡 SHOULD_BUILD_FRONTEND: ${env.SHOULD_BUILD_FRONTEND}"
-                }
-            }
-        }
-
-        stage('Gradle Build') {
-            when { expression { env.SHOULD_BUILD_BACKEND == "true" } }
-            steps {
-                container('gradle') {
+                container('git') {
+                    checkout scm
                     sh '''
-                        cd Backend
-                        chmod +x gradlew
-                        ./gradlew clean build -x test
+                        git checkout main || true
                     '''
+                    echo "   Received Params:"
+                    echo "   DOCKER_IMAGE_VERSION: ${params.DOCKER_IMAGE_VERSION}"
+                    echo "   DID_BUILD_APP: ${params.DID_BUILD_APP}"
+                    echo "   DID_BUILD_API: ${params.DID_BUILD_API}"
                 }
             }
         }
 
-        stage('Docker Login') {
+        stage('Update Frontend manifest') {
+            when { expression { params.DID_BUILD_APP == "true" } }
             steps {
-                container('docker') {
-                    withCredentials([usernamePassword(
-                        credentialsId: DOCKER_CREDENTIALS_ID,
-                        usernameVariable: 'DOCKER_USERNAME',
-                        passwordVariable: 'DOCKER_PASSWORD'
-                    )]) {
+                container('git') {
+                    dir('frontend') {
                         sh '''
-                            echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+                            echo "🔧 Updating frontend manifest..."
+                            sed -i "s|amicitia/lumi-frontend:.*|amicitia/lumi-frontend:${DOCKER_IMAGE_VERSION}|g" frontend-deploy.yaml
+                            git status
                         '''
                     }
                 }
             }
         }
 
-        stage('Backend Docker Build & Push') {
-            when { expression { env.SHOULD_BUILD_BACKEND == "true" } }
+        stage('Update Backend manifest') {
+            when { expression { params.DID_BUILD_API == "true" } }
             steps {
-                container('docker') {
+                container('git') {
+                    dir('backend') {
+                        sh '''
+                            echo " Updating backend manifest..."
+                            sed -i "s|amicitia/lumi-backend:.*|amicitia/lumi-backend:${DOCKER_IMAGE_VERSION}|g" backend-deploy.yaml
+                            git status
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Commit & Push Changes') {
+            when { expression { params.DID_BUILD_APP == "true" || params.DID_BUILD_API == "true" } }
+            steps {
+                container('git') {
                     script {
-                        def version = "${env.BUILD_NUMBER}"
-                        withEnv(["IMAGE_VERSION=${version}"]) {
-                            sh '''
-                                docker build -t $BACKEND_IMAGE_NAME:$IMAGE_VERSION -f Backend/Dockerfile ./Backend
-                                docker push $BACKEND_IMAGE_NAME:$IMAGE_VERSION
-                            '''
+                        echo "📤 Committing updated manifests..."
+                        sh '''
+                            git config user.name "${GIT_USER_NAME}"
+                            git config user.email "${GIT_USER_EMAIL}"
+                            git add .
+                            git commit -m "chore: update image tag ${DOCKER_IMAGE_VERSION}" || echo "No changes to commit"
+                        '''
+
+                        // ✅ sshagent 플러그인 필수
+                        sshagent([GIT_CREDENTIALS_ID]) {
+                            sh 'git push origin main'
                         }
                     }
                 }
             }
         }
 
-        stage('Frontend Docker Build & Push') {
-            when { expression { env.SHOULD_BUILD_FRONTEND == "true" } }
+        stage('Trigger ArgoCD Sync') {
             steps {
-                container('docker') {
-                    script {
-                        def version = "${env.BUILD_NUMBER}"
-                        withEnv(["IMAGE_VERSION=${version}"]) {
-                            sh '''
-                                docker build -t $FRONTEND_IMAGE_NAME:$IMAGE_VERSION -f Frontend/Dockerfile ./Frontend
-                                docker push $FRONTEND_IMAGE_NAME:$IMAGE_VERSION
-                            '''
-                        }
-                    }
-                }
-            }
-        }
-
-        stage('Trigger k8s-manifests (ArgoCD 연동)') {
-            steps {
-                script {
-                    def version = "${env.BUILD_NUMBER}"
-                    def buildApp = "${env.SHOULD_BUILD_FRONTEND}"
-                    def buildApi = "${env.SHOULD_BUILD_BACKEND}"
-
-                    echo "🚀 Triggering CD pipeline with version ${version}"
-                    echo "📦 DID_BUILD_APP=${buildApp}, DID_BUILD_API=${buildApi}"
-
-                    build job: 'lumi-manifests',
-                        parameters: [
-                            string(name: 'DOCKER_IMAGE_VERSION', value: version),
-                            string(name: 'DID_BUILD_APP', value: buildApp),
-                            string(name: 'DID_BUILD_API', value: buildApi)
-                        ],
-                        wait: true
-                }
+                echo " ArgoCD will auto-sync manifests after commit"
             }
         }
     }
 
     post {
-        always {
-            withCredentials([string(
-                credentialsId: DISCORD_WEBHOOK_CREDENTIALS_ID,
-                variable: 'DISCORD_WEBHOOK_URL'
-            )]) {
-                script {
-                    def emoji = currentBuild.result == 'SUCCESS' ? '✅' : '❌'
-                    discordSend description: """
-                    ${emoji} *${env.JOB_NAME}:${currentBuild.displayName}*
-                    ▶️ 결과 : ${currentBuild.result}
-                    🕒 실행 시간 : ${(currentBuild.duration / 1000).intValue()}초
-                    """,
-                    result: currentBuild.currentResult,
-                    title: "Lumi CI 파이프라인 알림",
-                    webhookURL: "${DISCORD_WEBHOOK_URL}"
-                }
-            }
+        success {
+            echo "✅ Manifests updated successfully"
+        }
+        failure {
+            echo "❌ Failed to update manifests"
         }
     }
 }
