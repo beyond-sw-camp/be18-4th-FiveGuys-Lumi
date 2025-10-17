@@ -74,20 +74,18 @@ pipeline {
     post {
         always {
             agent { label 'ci-agent' }
-            steps {
-                withCredentials([string(
-                    credentialsId: DISCORD_WEBHOOK_CREDENTIALS_ID,
-                    variable: 'DISCORD_WEBHOOK_URL'
-                )]) {
-                    discordSend description: """
-                    *${env.JOB_NAME}:${currentBuild.displayName}*
-                    결과 : ${currentBuild.result}
-                    실행 시간 : ${(currentBuild.duration / 1000).intValue()}초
-                    """,
-                    result: currentBuild.currentResult,
-                    title: "Jenkins CI 알림",
-                    webhookURL: "${DISCORD_WEBHOOK_URL}"
-                }
+            withCredentials([string(
+                credentialsId: DISCORD_WEBHOOK_CREDENTIALS_ID,
+                variable: 'DISCORD_WEBHOOK_URL'
+            )]) {
+                discordSend description: """
+                *${env.JOB_NAME}:${currentBuild.displayName}*
+                결과 : ${currentBuild.result}
+                실행 시간 : ${(currentBuild.duration / 1000).intValue()}초
+                """,
+                result: currentBuild.currentResult,
+                title: "Jenkins CI 알림",
+                webhookURL: "${DISCORD_WEBHOOK_URL}"
             }
         }
     }
