@@ -24,38 +24,36 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final UserDetailsServiceImpl userDetailsService;
 
-    // PasswordEncoder Bean
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    /*
-     AuthenticationManager를 빈으로 노출하는 최신 방식입니다. Spring Security가 UserDetailsService와
-     PasswordEncoder를 자동으로 감지하므로 DaoAuthenticationProvider를 직접 구성할 필요가 없습니다. 이 방식은
-     DaoAuthenticationProvider 관련 더 이상 사용되지 않는 경고를 제거합니다.
-     */
     @Bean
-    public AuthenticationManager authenticationManager(
-            AuthenticationConfiguration authenticationConfiguration) throws Exception {
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
     }
 
-    // SecurityFilterChain Bean
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf(AbstractHttpConfigurer::disable) // CSRF 비활성화
-                .cors(cors -> {
-                })             // CORS 허용
-                .sessionManagement(session -> session.sessionCreationPolicy(
-                        SessionCreationPolicy.STATELESS)) // 세션 사용 안함
-                .exceptionHandling(exceptionHandling -> exceptionHandling.authenticationEntryPoint(
-                                new AuthenticationEntryPointImpl())
-                        .accessDeniedHandler(new AccessDeniedHandlerImpl())).authorizeHttpRequests(
-                        auth -> auth.requestMatchers("/", "/api/login", "/api/sign-up", "/api/refresh",
-                                        "/api/logout", "/api/public/**", "/api/email/**").permitAll().requestMatchers("/api/chatrooms/**").authenticated().anyRequest()
-                                .authenticated()).addFilterBefore(jwtAuthenticationFilter,
-                        UsernamePasswordAuthenticationFilter.class);
+        http.csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> {})
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(new AuthenticationEntryPointImpl())
+                        .accessDeniedHandler(new AccessDeniedHandlerImpl())
+                )
+                .authorizeHttpRequests(auth -> auth
+                        // 헬스체크 경로를 인증 없이 허용
+                        .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                        // 기존 공개 경로들
+                        .requestMatchers("/", "/api/login", "/api/sign-up", "/api/refresh",
+                                "/api/logout", "/api/public/**", "/api/email/**").permitAll()
+                        // 나머지 보호 경로들
+                        .requestMatchers("/api/chatrooms/**").authenticated()
+                        .anyRequest().authenticated()
+                )
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
