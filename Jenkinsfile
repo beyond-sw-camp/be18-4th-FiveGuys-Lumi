@@ -39,23 +39,22 @@ spec:
             }
         }
 
+        // 🔧 여기 수정됨 — container('docker') 제거
         stage('Detect Changes') {
             steps {
-                container('docker') {
-                    script {
-                        def changedFiles = sh(
-                            script: 'git diff --name-only HEAD~1 || true',
-                            returnStdout: true
-                        ).trim().split("\n")
+                script {
+                    def changedFiles = sh(
+                        script: 'git diff --name-only HEAD~1 || true',
+                        returnStdout: true
+                    ).trim().split("\n")
 
-                        echo "📂 변경된 파일 목록:\n${changedFiles.join('\n')}"
+                    echo "📂 변경된 파일 목록:\n${changedFiles.join('\n')}"
 
-                        env.SHOULD_BUILD_BACKEND = changedFiles.any { it.startsWith("Backend/") } ? "true" : "false"
-                        env.SHOULD_BUILD_FRONTEND = changedFiles.any { it.startsWith("Frontend/") } ? "true" : "false"
+                    env.SHOULD_BUILD_BACKEND = changedFiles.any { it.startsWith("Backend/") } ? "true" : "false"
+                    env.SHOULD_BUILD_FRONTEND = changedFiles.any { it.startsWith("Frontend/") } ? "true" : "false"
 
-                        echo "💡 SHOULD_BUILD_BACKEND: ${env.SHOULD_BUILD_BACKEND}"
-                        echo "💡 SHOULD_BUILD_FRONTEND: ${env.SHOULD_BUILD_FRONTEND}"
-                    }
+                    echo "💡 SHOULD_BUILD_BACKEND: ${env.SHOULD_BUILD_BACKEND}"
+                    echo "💡 SHOULD_BUILD_FRONTEND: ${env.SHOULD_BUILD_FRONTEND}"
                 }
             }
         }
