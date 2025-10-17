@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'ci-agent' }
+    agent any
 
     environment {
         DOCKER_CREDENTIALS_ID = 'dockerhub-cred'
