@@ -75,7 +75,6 @@ pipeline {
     post {
         always {
             agent { label 'ci-agent' }
-            steps {
                 withCredentials([string(
                     credentialsId: DISCORD_WEBHOOK_CREDENTIALS_ID,
                     variable: 'DISCORD_WEBHOOK_URL'

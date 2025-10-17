@@ -5,8 +5,7 @@ FROM openjdk:21-jdk
 WORKDIR /app
 
 # 3. JAR 파일 복사 (Gradle 빌드 산출물)
-COPY build/libs/*.jar app.jar
-
+COPY ./build/libs/*.jar app.jar
 # 4. 외부 접근 포트 열기
 EXPOSE 8080
 
