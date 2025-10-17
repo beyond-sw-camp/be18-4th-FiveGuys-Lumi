@@ -1,5 +1,5 @@
 pipeline {
-    agent none  // 각 stage에서 개별 agent 사용
+    agent none  // 각 stage별 agent 사용
 
     environment {
         DOCKER_CREDENTIALS_ID = 'dockerhub-cred'
@@ -26,7 +26,6 @@ pipeline {
 
         stage('Docker Build & Push (Parallel)') {
             parallel {
-
                 stage('Backend Build & Push') {
                     agent { label 'ci-agent' }
                     steps {
@@ -75,6 +74,7 @@ pipeline {
     post {
         always {
             agent { label 'ci-agent' }
+            steps {
                 withCredentials([string(
                     credentialsId: DISCORD_WEBHOOK_CREDENTIALS_ID,
                     variable: 'DISCORD_WEBHOOK_URL'
