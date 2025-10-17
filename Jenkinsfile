@@ -98,13 +98,17 @@ pipeline {
             steps {
                 script {
                     def version = "${env.BUILD_NUMBER}"
+                    def buildApp = "${env.SHOULD_BUILD_FRONTEND}"
+                    def buildApi = "${env.SHOULD_BUILD_BACKEND}"
+
                     echo "🚀 Triggering CD pipeline with version ${version}"
+                    echo "📦 DID_BUILD_APP=${buildApp}, DID_BUILD_API=${buildApi}"
 
                     build job: 'lumi-manifests',
                         parameters: [
-                            string(name: 'DOCKER_IMAGE_VERSION', value: "${version}"),
-                            string(name: 'DID_BUILD_APP', value: "${env.SHOULD_BUILD_FRONTEND}"),
-                            string(name: 'DID_BUILD_API', value: "${env.SHOULD_BUILD_BACKEND}")
+                            string(name: 'DOCKER_IMAGE_VERSION', value: version),
+                            string(name: 'DID_BUILD_APP', value: buildApp),
+                            string(name: 'DID_BUILD_API', value: buildApi)
                         ],
                         wait: true
                 }
