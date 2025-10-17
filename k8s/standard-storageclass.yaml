@@ -5,5 +5,5 @@ metadata:
   annotations:
     storageclass.kubernetes.io/is-default-class: "true"
 provisioner: docker.io/hostpath
-reclaimPolicy: Delete
+reclaimPolicy: Retain
 volumeBindingMode: Immediate
