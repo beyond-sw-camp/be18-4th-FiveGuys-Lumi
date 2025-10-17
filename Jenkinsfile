@@ -1,10 +1,35 @@
 pipeline {
-    agent any
+    agent {
+        kubernetes {
+            inheritFrom ''
+            defaultContainer 'jnlp'
+            yaml """
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: gradle
+    image: gradle:8.10.2-jdk21-alpine
+    command: ['cat']
+    tty: true
+  - name: docker
+    image: docker:28.5.1-cli-alpine3.22
+    command: ['cat']
+    tty: true
+    volumeMounts:
+    - name: docker-sock
+      mountPath: /var/run/docker.sock
+  volumes:
+  - name: docker-sock
+    hostPath:
+      path: /var/run/docker.sock
+"""
+        }
+    }
 
     environment {
         DOCKER_CREDENTIALS_ID = 'dockerhub-cred'
         DISCORD_WEBHOOK_CREDENTIALS_ID = 'discord-webhook-lumi'
-
         BACKEND_IMAGE_NAME = 'amicitia/lumi-backend'
         FRONTEND_IMAGE_NAME = 'amicitia/lumi-frontend'
     }
@@ -12,21 +37,23 @@ pipeline {
     stages {
         stage('Detect Changes') {
             steps {
-                script {
-                    // 최근 커밋 비교로 변경된 파일 목록을 가져옴
-                    def changedFiles = sh(
-                        script: 'git diff --name-only HEAD~1',
-                        returnStdout: true
-                    ).trim().split("\n")
+                container('gradle') {
+                    script {
+                        // 최근 커밋 비교로 변경된 파일 목록 확인
+                        def changedFiles = sh(
+                            script: 'git diff --name-only HEAD~1',
+                            returnStdout: true
+                        ).trim().split("\n")
 
-                    echo "📂 변경된 파일 목록:\n${changedFiles.join('\n')}"
+                        echo "📂 변경된 파일 목록:\n${changedFiles.join('\n')}"
 
-                    // 변경된 경로를 기준으로 빌드할 대상 결정
-                    env.SHOULD_BUILD_BACKEND = changedFiles.any { it.startsWith("Backend/") } ? "true" : "false"
-                    env.SHOULD_BUILD_FRONTEND = changedFiles.any { it.startsWith("Frontend/") } ? "true" : "false"
+                        // 변경된 경로에 따라 빌드 대상 결정
+                        env.SHOULD_BUILD_BACKEND = changedFiles.any { it.startsWith("Backend/") } ? "true" : "false"
+                        env.SHOULD_BUILD_FRONTEND = changedFiles.any { it.startsWith("Frontend/") } ? "true" : "false"
 
-                    echo "💡 SHOULD_BUILD_BACKEND: ${env.SHOULD_BUILD_BACKEND}"
-                    echo "💡 SHOULD_BUILD_FRONTEND: ${env.SHOULD_BUILD_FRONTEND}"
+                        echo "💡 SHOULD_BUILD_BACKEND: ${env.SHOULD_BUILD_BACKEND}"
+                        echo "💡 SHOULD_BUILD_FRONTEND: ${env.SHOULD_BUILD_FRONTEND}"
+                    }
                 }
             }
         }
