@@ -55,11 +55,22 @@ public class GlobalExceptionHandler {
 
     // 서버 내부 오류
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<BaseResponseDto<String>> handleGeneralException(Exception ex) {
+    public ResponseEntity<BaseResponseDto<String>> handleGeneralException(
+            Exception ex,
+            jakarta.servlet.http.HttpServletRequest request
+    ) {
+        // Actuator 요청은 스프링 기본 예외 처리에 맡긴다
+        if (request.getRequestURI().startsWith("/actuator")) {
+            throw new RuntimeException(ex);
+        }
+
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                             .body(BaseResponseDto.error(HttpStatus.INTERNAL_SERVER_ERROR,
-                                                         "서버 오류가 발생했습니다."));
+                .body(BaseResponseDto.error(
+                        HttpStatus.INTERNAL_SERVER_ERROR,
+                        "서버 오류가 발생했습니다."
+                ));
     }
+
 
     // 공용 에러 핸들러
     @ExceptionHandler(GlobalException.class)
