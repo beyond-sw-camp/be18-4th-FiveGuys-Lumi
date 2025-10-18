@@ -8,7 +8,7 @@ const apiClient = axios.create({
 });
 
 // Axios 인터셉터
-//   - 요청(Request) 또는 응답(Response)이 처리되기 전에 가로채서 특정 로직을 수행하도록 하는 기능이다.!!!!!!!!
+//   - 요청(Request) 또는 응답(Response)이 처리되기 전에 가로채서 특정 로직을 수행하도록 하는 기능이다.!!!!!!!!!!
 
 // 요청(Request) 인터셉터
 //   - HTTP 요청이 서버로 전송되기 전에 실행된다.
