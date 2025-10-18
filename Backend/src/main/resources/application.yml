@@ -1,0 +1,89 @@
+server:
+  port: 8080
+
+spring:
+  # .env import
+  config:
+    import: optional:file:.env[.properties]
+  application:
+    name: lumi
+  # active 프로필 설정은 한 번만 명시합니다.
+  profiles:
+    active: local
+
+  # 이미지 파일 용량 제한
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 500MB
+  # 이메일 설정
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+  # JPA 설정
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        database-platform: org.hibernate.dialect.MariaDBDialect
+
+file:
+  upload-dir: ./uploads
+
+jwt:
+  secret: ${JWT_SECRET}
+  access-expiration: ${JWT_ACCESS_EXPIRATION:300000}
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+
+---
+# local 프로필 설정
+spring:
+  config:
+    activate:
+      on-profile: local
+  datasource:
+    driver-class-name: org.mariadb.jdbc.Driver
+    url: ${LOCAL_DB_URL}
+    username: ${LOCAL_DB_USERNAME}
+    password: ${LOCAL_DB_PASSWORD}
+  data:
+    redis:
+      host: ${LOCAL_REDIS_HOST:localhost}
+      port: 6379
+      password: ${LOCAL_REDIS_PASSWORD:}
+file:
+  upload-dir: ./uploads
+
+---
+# dev 프로필 설정
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    driver-class-name: org.mariadb.jdbc.Driver
+    url: ${DEV_DATASOURCE_URL}
+    username: ${DEV_DB_USERNAME}
+    password: ${DEV_DB_PASSWORD}
+  data:
+    redis:
+      host: redis
+      port: 6379
+      password: ${DEV_REDIS_PASSWORD}
+file:
+  upload-dir: /spring-boot/uploads
+
+logging:
+  level:
+    org.springframework: INFO
