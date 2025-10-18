@@ -45,7 +45,7 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         // 헬스체크 경로를 인증 없이 허용
-                        .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                        .requestMatchers("/actuator/**").permitAll()
                         // 기존 공개 경로들
                         .requestMatchers("/", "/api/login", "/api/sign-up", "/api/refresh",
                                 "/api/logout", "/api/public/**", "/api/email/**").permitAll()
