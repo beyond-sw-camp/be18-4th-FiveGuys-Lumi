@@ -44,7 +44,7 @@ public class SecurityConfig {
                         .accessDeniedHandler(new AccessDeniedHandlerImpl())
                 )
                 .authorizeHttpRequests(auth -> auth
-                        // 헬스체크 경로를 인증 없이 허용!
+                        // 헬스체크 경로를 인증 없이 허용!!!!
                         .requestMatchers("/actuator/**").permitAll()
                         // 기존 공개 경로들
                         .requestMatchers("/", "/api/login", "/api/sign-up", "/api/refresh",
