@@ -54,10 +54,13 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+
     proxy: {
       '/api': {
-        target: import.meta.env.VITE_API_URL,
+        target: 'http://backend:8080',
         changeOrigin: true,
+        // ws: true, // WebSocket 쓰면 주석 해제
+        // rewrite: path => path.replace(/^\/api/, ''), // 필요하면 /api 제거
       },
     },
   },
