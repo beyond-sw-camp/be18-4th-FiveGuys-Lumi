@@ -13,7 +13,7 @@
 
           <!-- 회원가입 폼 -->
           <v-card class="form-card sign-up" :class="{ active: isSignUpActive }">
-            <v-card-title class="justify-center">회원가입 v1.0</v-card-title>
+            <v-card-title class="justify-center">회원가입 v2.0</v-card-title>
             <v-card-text>
               <div style="margin-bottom: 12px; font-size: 12px; color: #555; text-align: center">
                 서비스 이용을 위해 아래 정보를 입력해주세요.
