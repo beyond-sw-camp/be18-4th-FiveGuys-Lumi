@@ -73,7 +73,8 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
                          .set(redisKey, email, 10, TimeUnit.MINUTES);
 
             // 나중에 수정고려 8080이 아니라 실무에서 어떡해 하는지 봐야할 듯
-            String link = "http://localhost:8080/api/email/verify?token=" + token;
+//            String link = "http://localhost:8080/api/email/verify?token=" + token;
+            String link = "http://localhost:30090/api/email/verify?token=" + token;
 
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
