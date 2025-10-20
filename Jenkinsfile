@@ -140,8 +140,14 @@ spec:
 
     post {
         always {
-
-            junit 'Backend/build/test-results/test/*.xml'
+            script {
+                // 테스트 리포트 디렉터리가 있을 때만 junit 실행
+                if (fileExists('Backend/build/test-results/test')) {
+                    junit 'Backend/build/test-results/test/*.xml'
+                } else {
+                echo "⚠️ No test results found. Skipping JUnit report upload."
+                }
+            }
 
             withCredentials([string(credentialsId: DISCORD_WEBHOOK_CREDENTIALS_ID, variable: 'DISCORD_WEBHOOK_URL')]) {
                 script {

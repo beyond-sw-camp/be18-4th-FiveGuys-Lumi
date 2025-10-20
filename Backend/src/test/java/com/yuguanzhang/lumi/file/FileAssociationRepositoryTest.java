@@ -51,7 +51,7 @@ public class FileAssociationRepositoryTest {
         when(fileAssociationRepository.findByEntityIdAndEntityType(100L, EntityType.ASSIGNMENT))
                 .thenReturn(List.of(association));
 
-        // when
+        // when.
         List<FileAssociation> result = fileAssociationRepository
                 .findByEntityIdAndEntityType(100L, EntityType.ASSIGNMENT);
 
