@@ -37,6 +37,7 @@ spec:
     }
 
     stages {
+
         stage('Checkout Source') {
             steps {
                 checkout scm
@@ -76,6 +77,19 @@ spec:
             }
         }
 
+        stage('Backend Test') {
+            when { expression { env.SHOULD_BUILD_BACKEND == "true" } }
+            steps {
+                container('gradle') {
+                    sh '''
+                        cd Backend
+                        chmod +x gradlew
+                        ./gradlew clean test
+                    '''
+                }
+            }
+        }
+
         stage('Backend Build & Push') {
             when { expression { env.SHOULD_BUILD_BACKEND == "true" } }
             steps {
@@ -83,7 +97,7 @@ spec:
                     sh '''
                         cd Backend
                         chmod +x gradlew
-                        ./gradlew clean build -x test
+                        ./gradlew clean build
                     '''
                 }
                 container('docker') {

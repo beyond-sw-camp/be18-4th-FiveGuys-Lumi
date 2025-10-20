@@ -113,18 +113,21 @@ public class ChannelServiceImpl implements ChannelService {
 
     @Override
     public ChannelResponseDto deleteChannel(Long channelId, User user) {
+        Channel channel = channelRepository.findById(channelId)
+                .orElseThrow(() -> new NoSuchElementException("채널이 존재하지 않습니다."));
 
         //권한 체크
         roleAuthorizationService.checkTutor(channelId, user.getUserId());
 
         //삭제할 채널 가져오기
-        Channel channel = channelRepository.findById(channelId)
-                                           .orElseThrow(() -> new GlobalException(
-                                                   ExceptionMessage.CHANNEL_NOT_FOUND));
+        channel = channelRepository.findById(channelId)
+                .orElseThrow(() -> new GlobalException(
+                        ExceptionMessage.CHANNEL_NOT_FOUND));
 
         //채널 삭제
-        channel.getChannelUsers()
-               .clear();
+        if (channel.getChannelUsers() != null) {
+            channel.getChannelUsers().clear(); // cascade 삭제를 위해 clear
+        }
         channelRepository.delete(channel);
 
         return ChannelResponseDto.fromEntity(channel);
