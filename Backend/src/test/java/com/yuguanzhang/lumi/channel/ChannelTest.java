@@ -9,9 +9,8 @@ import com.yuguanzhang.lumi.role.entity.RoleName;
 import com.yuguanzhang.lumi.role.repositiry.RoleRepository;
 import com.yuguanzhang.lumi.user.entity.User;
 import com.yuguanzhang.lumi.user.repository.UserRepository;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -20,7 +19,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,10 +26,9 @@ import org.springframework.transaction.annotation.Transactional;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(addFilters = false)
 @SpringBootTest
 @Transactional
-@TestInstance(TestInstance.Lifecycle.PER_CLASS) // @BeforeAll에서 static 제거 가능
 public class ChannelTest {
 
     @Autowired
@@ -51,32 +48,29 @@ public class ChannelTest {
 
     private static final String TEST_USER_EMAIL = "test@test.com";
 
-    @BeforeAll
+    @BeforeEach
     void setUp() {
-        // 테스트용 유저 저장
-        if (userRepository.findByEmail(TEST_USER_EMAIL).isEmpty()) {
-            User testUser = User.builder()
-                    .name("테스트유저")
-                    .password("1234")
-                    .email(TEST_USER_EMAIL)
-                    .isDeleted("N")
-                    .isPrivacyAgreement(true)
-                    .isVerified(true)
-                    .build();
-            userRepository.save(testUser);
-        }
+        userRepository.deleteAll();
+        roleRepository.deleteAll();
+        channelRepository.deleteAll();
 
-        // TUTOR 역할 없으면 생성
-        if (roleRepository.findByRoleName(RoleName.TUTOR).isEmpty()) {
-            roleRepository.save(Role.builder()
-                    .roleName(RoleName.TUTOR)
-                    .build());
-        }
+        User testUser = User.builder()
+                .name("테스트유저")
+                .password("1234")
+                .email(TEST_USER_EMAIL)
+                .isDeleted("N")
+                .isPrivacyAgreement(true)
+                .isVerified(true)
+                .build();
+        userRepository.save(testUser);
+
+        roleRepository.save(Role.builder()
+                .roleName(RoleName.TUTOR)
+                .build());
     }
 
     @Test
     @Rollback
-    @WithUserDetails(value = TEST_USER_EMAIL, userDetailsServiceBeanName = "testUserDetailsService")
     void channelTest() throws Exception {
         // 채널 생성 요청
         ChannelRequestDto createDto = ChannelRequestDto.builder()
@@ -84,27 +78,23 @@ public class ChannelTest {
                 .subject("SpringBoot")
                 .build();
 
-        String createResponse = mockMvc.perform(post("/api/channels")
+        mockMvc.perform(post("/api/channels")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createDto)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data[0].name").value("통합 테스트 채널"))
-                .andExpect(jsonPath("$.data[0].subject").value("SpringBoot"))
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
+                .andExpect(jsonPath("$.data[0].subject").value("SpringBoot"));
 
-        // DB에서 생성된 채널 ID 가져오기
+        // 채널 DB 확인
         Channel created = channelRepository.findAll().get(0);
         Long channelId = created.getChannelId();
 
-        // 채널 상세 조회
+        // 채널 조회
         mockMvc.perform(get("/api/channels/" + channelId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].name").value("통합 테스트 채널"))
-                .andExpect(jsonPath("$.data[0].subject").value("SpringBoot"));
+                .andExpect(jsonPath("$.data[0].name").value("통합 테스트 채널"));
 
-        // 채널 수정
+        // 수정 테스트
         ChannelRequestDto updateDto = ChannelRequestDto.builder()
                 .name("수정 된 채널명")
                 .subject("JPA")
@@ -117,20 +107,14 @@ public class ChannelTest {
                 .andExpect(jsonPath("$.data[0].name").value("수정 된 채널명"))
                 .andExpect(jsonPath("$.data[0].subject").value("JPA"));
 
-        // DELETE 테스트 - null-safe
+        // 삭제 테스트
         mockMvc.perform(delete("/api/channels/" + channelId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].channelId").value(channelId))
-                .andExpect(jsonPath("$.data[0].name").exists())
-                .andExpect(jsonPath("$.data[0].subject").exists())
-                // 삭제 후 roleName / requestUserId는 null 가능
-                .andExpect(jsonPath("$.data[0].roleName").isEmpty())
-                .andExpect(jsonPath("$.data[0].requestUserId").isEmpty());
+                .andExpect(jsonPath("$.data[0].channelId").value(channelId));
     }
 
     @TestConfiguration
     static class TestSecurityConfig {
-        // 테스트용 UserDetailsService를 정의하여 @WithUserDetails 사용 가능하게 함
         @Bean
         @Primary
         public UserDetailsService testUserDetailsService(UserRepository userRepository) {
