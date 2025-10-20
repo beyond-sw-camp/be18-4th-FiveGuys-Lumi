@@ -140,6 +140,9 @@ spec:
 
     post {
         always {
+
+            junit 'Backend/build/test-results/test/*.xml'
+
             withCredentials([string(credentialsId: DISCORD_WEBHOOK_CREDENTIALS_ID, variable: 'DISCORD_WEBHOOK_URL')]) {
                 script {
                     def emoji = currentBuild.result == 'SUCCESS' ? '✅' : '❌'
