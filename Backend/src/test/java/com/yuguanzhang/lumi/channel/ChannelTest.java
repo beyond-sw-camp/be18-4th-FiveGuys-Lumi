@@ -18,6 +18,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -47,7 +48,7 @@ class ChannelServiceTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         testUser = User.builder()
-                .userId(1L)
+                .userId(UUID.randomUUID())   // ✅ long → UUID
                 .email("tester@test.com")
                 .name("테스터")
                 .build();
@@ -107,7 +108,7 @@ class ChannelServiceTest {
 
         when(channelRepository.findByChannelIdAndChannelUsers_User(1L, testUser))
                 .thenReturn(Optional.of(channel));
-        when(channelUserRepository.findByChannel_ChannelIdAndUser_UserId(1L, 1L))
+        when(channelUserRepository.findByChannel_ChannelIdAndUser_UserId(1L, testUser.getUserId())) // ✅ 수정됨
                 .thenReturn(Optional.of(channelUser));
 
         // when
