@@ -43,6 +43,6 @@ src/main/resources/.env
 redis/
 
 uploads/
-
+#ignore
 .env
 .env.compose
