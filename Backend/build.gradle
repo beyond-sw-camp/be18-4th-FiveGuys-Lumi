@@ -25,10 +25,10 @@ repositories {
 }
 
 dependencies {
-	// email
+	// Email
 	implementation 'org.springframework.boot:spring-boot-starter-mail'
 
-	// redis
+	// Redis
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
 	// JWT
@@ -49,12 +49,19 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.security:spring-security-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
 	implementation 'org.springframework.boot:spring-boot-starter-websocket'
-
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
-
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+sourceSets {
+	test {
+		resources {
+			srcDirs = ["src/test/resources"]
+		}
+	}
 }
