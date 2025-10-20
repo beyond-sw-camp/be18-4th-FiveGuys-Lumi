@@ -12,6 +12,7 @@ import com.yuguanzhang.lumi.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -26,8 +27,19 @@ import org.springframework.transaction.annotation.Transactional;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+/**
+ * CI 환경에서도 H2 DB를 이용해 완전히 독립적으로 실행 가능하도록 구성된 통합 테스트 클래스
+ */
 @AutoConfigureMockMvc(addFilters = false)
-@SpringBootTest
+@SpringBootTest(
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        exclude = {
+                SecurityAutoConfiguration.class, // ✅ 스프링 시큐리티 비활성화
+                org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration.class,
+                org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration.class,
+                org.springframework.boot.autoconfigure.mail.MailSenderAutoConfiguration.class
+        }
+)
 @Transactional
 public class ChannelTest {
 
@@ -50,10 +62,12 @@ public class ChannelTest {
 
     @BeforeEach
     void setUp() {
+        // 테스트 환경 정리
         userRepository.deleteAll();
         roleRepository.deleteAll();
         channelRepository.deleteAll();
 
+        // 테스트용 유저 생성
         User testUser = User.builder()
                 .name("테스트유저")
                 .password("1234")
@@ -64,6 +78,7 @@ public class ChannelTest {
                 .build();
         userRepository.save(testUser);
 
+        // 테스트용 역할 생성
         roleRepository.save(Role.builder()
                 .roleName(RoleName.TUTOR)
                 .build());
@@ -72,7 +87,7 @@ public class ChannelTest {
     @Test
     @Rollback
     void channelTest() throws Exception {
-        // 채널 생성 요청
+        // 1️⃣ 채널 생성
         ChannelRequestDto createDto = ChannelRequestDto.builder()
                 .name("통합 테스트 채널")
                 .subject("SpringBoot")
@@ -85,16 +100,16 @@ public class ChannelTest {
                 .andExpect(jsonPath("$.data[0].name").value("통합 테스트 채널"))
                 .andExpect(jsonPath("$.data[0].subject").value("SpringBoot"));
 
-        // 채널 DB 확인
+        // 2️⃣ 생성 확인
         Channel created = channelRepository.findAll().get(0);
         Long channelId = created.getChannelId();
 
-        // 채널 조회
+        // 3️⃣ 조회 테스트
         mockMvc.perform(get("/api/channels/" + channelId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].name").value("통합 테스트 채널"));
 
-        // 수정 테스트
+        // 4️⃣ 수정 테스트
         ChannelRequestDto updateDto = ChannelRequestDto.builder()
                 .name("수정 된 채널명")
                 .subject("JPA")
@@ -107,12 +122,15 @@ public class ChannelTest {
                 .andExpect(jsonPath("$.data[0].name").value("수정 된 채널명"))
                 .andExpect(jsonPath("$.data[0].subject").value("JPA"));
 
-        // 삭제 테스트
+        // 5️⃣ 삭제 테스트
         mockMvc.perform(delete("/api/channels/" + channelId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].channelId").value(channelId));
     }
 
+    /**
+     * 테스트 환경에서만 동작하는 시큐리티 대체 Bean 구성
+     */
     @TestConfiguration
     static class TestSecurityConfig {
         @Bean
