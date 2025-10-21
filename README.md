@@ -796,7 +796,65 @@ spec:
 # 8. 회고
 | 이름                                    | 회고 내용                                           |
 |--------------|-----------------------------------------------------------------------------------------------------------------|
-|      김민수        |                 |
+|      김민수        |  처음 사용해보는 쿠버네티스, 젠킨스details>
+  <summary>10. ArgoCD Sync</summary>
+
+  <img src="https://github.com/jaesangE/git-test/blob/main/assets/5.ArcoCD_Sync.png?raw=true" width="800px">
+
+</details>
+
+<details>
+  <summary>11. 백엔드 Sync</summary>
+
+  <img src="https://github.com/jaesangE/git-test/blob/main/assets/6.%EB%B0%B1%EC%97%94%EB%93%9CSync.gif?raw=true" width="1000px">
+
+</details>
+
+<details>
+  <summary>12. 프론트엔드 Sync</summary>
+
+  <img src="https://github.com/jaesangE/git-test/blob/main/assets/7.%ED%94%84%EB%A1%A0%ED%8A%B8Sync.gif?raw=true" width="1000px">
+
+</details>
+
+<details>
+  <summary>13. CD 네임스페이스</summary>
+
+  <img src="https://github.com/jaesangE/git-test/blob/main/assets/8.CD%EB%84%A4%EC%9E%84%EC%8A%A4%ED%8E%98%EC%9D%B4%EC%8A%A4.png?raw=true" width="800px">
+
+</details>
+
+<details>
+  <summary>14. 버전업 전 </summary>
+
+  <img src="https://github.com/jaesangE/git-test/blob/main/assets/10.%EB%B2%84%EC%A0%84%EC%97%85_%EC%A0%84.png?raw=true" width="800px">
+
+</details>
+
+<details>
+  <summary>15. 버전업 후</summary>
+
+  <img src="https://github.com/jaesangE/git-test/blob/main/assets/11.%EB%B2%84%EC%A0%84%EC%97%85_%ED%9B%84.png?raw=true" width="800px">
+
+</details>
+
+<details>
+  <summary>16. API 테스트</summary>
+
+  <img src="https://github.com/jaesangE/git-test/blob/main/assets/16.api%ED%85%8C%EC%8A%A4%ED%8A%B8.gif?raw=true" width="1000px">
+
+</details>
+
+
+
+
+
+
+
+# 8. 회고
+| 이름                                    | 회고 내용                                           |
+|--------------|-----------------------------------------------------------------------------------------------------------------|
+|      김민수        |  처음 사용해보는 쿠버네티스, 젠킨스, 아르고에 로컬 환경을 넘어서 배포 실습까지 단번에 이해하기 힘들었지만 프로젝트를 진행하며 한 번 더 해보는 것으로 그나마 감을 잡을 수 있는 좋은 기회였습니다.               |
 |      김재상        |      회고 작성란          |
 |      조용주        |                 |
 |      이원진        |  CI/CD 는 이번 프로젝트를 진행하면서 완전히 처음 접하는 과정이라 수업 내용을 이해하는 것에도 많은 시간이 들었습니다. 이번 프로젝트를 진행하면서 발표자료 제작 등 준비를 하며 수업 내용을 복습해보는 기회가 되었고 훌륭한 팀원분들의 도움으로 프로젝트를 무사히 마무리지을 수 있었습니다. 얼마 없는 시간동안 프로젝트 진행하느라 고생하신 팀원분들께 다시 한번 감사드립니다!                |
