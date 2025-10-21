@@ -793,60 +793,6 @@ spec:
 
 
 
-  <summary>10. ArgoCD Sync</summary>
-
-  <img src="https://github.com/jaesangE/git-test/blob/main/assets/5.ArcoCD_Sync.png?raw=true" width="800px">
-
-</details>
-
-<details>
-  <summary>11. 백엔드 Sync</summary>
-
-  <img src="https://github.com/jaesangE/git-test/blob/main/assets/6.%EB%B0%B1%EC%97%94%EB%93%9CSync.gif?raw=true" width="1000px">
-
-</details>
-
-<details>
-  <summary>12. 프론트엔드 Sync</summary>
-
-  <img src="https://github.com/jaesangE/git-test/blob/main/assets/7.%ED%94%84%EB%A1%A0%ED%8A%B8Sync.gif?raw=true" width="1000px">
-
-</details>
-
-<details>
-  <summary>13. CD 네임스페이스</summary>
-
-  <img src="https://github.com/jaesangE/git-test/blob/main/assets/8.CD%EB%84%A4%EC%9E%84%EC%8A%A4%ED%8E%98%EC%9D%B4%EC%8A%A4.png?raw=true" width="800px">
-
-</details>
-
-<details>
-  <summary>14. 버전업 전 </summary>
-
-  <img src="https://github.com/jaesangE/git-test/blob/main/assets/10.%EB%B2%84%EC%A0%84%EC%97%85_%EC%A0%84.png?raw=true" width="800px">
-
-</details>
-
-<details>
-  <summary>15. 버전업 후</summary>
-
-  <img src="https://github.com/jaesangE/git-test/blob/main/assets/11.%EB%B2%84%EC%A0%84%EC%97%85_%ED%9B%84.png?raw=true" width="800px">
-
-</details>
-
-<details>
-  <summary>16. API 테스트</summary>
-
-  <img src="https://github.com/jaesangE/git-test/blob/main/assets/16.api%ED%85%8C%EC%8A%A4%ED%8A%B8.gif?raw=true" width="1000px">
-
-</details>
-
-
-
-
-
-
-
 # 8. 회고
 | 이름                                    | 회고 내용                                           |
 |--------------|-----------------------------------------------------------------------------------------------------------------|
