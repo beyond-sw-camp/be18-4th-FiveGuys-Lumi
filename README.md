@@ -793,10 +793,7 @@ spec:
 
 
 
-# 8. 회고
-| 이름                                    | 회고 내용                                           |
-|--------------|-----------------------------------------------------------------------------------------------------------------|
-|      김민수        |  처음 사용해보는 쿠버네티스, 젠킨스details>
+
   <summary>10. ArgoCD Sync</summary>
 
   <img src="https://github.com/jaesangE/git-test/blob/main/assets/5.ArcoCD_Sync.png?raw=true" width="800px">
